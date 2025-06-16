@@ -1,41 +1,52 @@
 package org.example;
 
+import io.qameta.allure.Step;
+import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 
-import java.util.List;
-
 import static io.restassured.RestAssured.given;
 
-public class CreateOrder {
+public class GetOrder {
 
     private static final String BASE_URL = "https://qa-scooter.praktikum-services.ru";
 
-    // Метод для создания заказа и получения поля track
-    public Integer createOrderAndGetTrack() {
-        // Создаем объект заказа класса Order
-        Order orderData = new Order(
-                "Татьяна",
-                "Козлова",
-                "Москва, Красная площадь, д.1",
-                "Краснопресненская",
-                "+7 900 009 09 09",
-                14,
-                "2025-06-15",
-                "Будьте осторожны!!!",
-                List.of("BLACK")); // Цвет задан списком строк
+   // Метод для создания закада и получения его track
+   @Step("Создание заказа и получение track-кода")
+    public static int createOrderAndGetTrack() {
+        // Запрос JSON тела
+        String requestBody = "{\n" +
+                "    \"firstName\": \"Татьяна\",\n" +
+                "    \"lastName\": \"Козлова\",\n" +
+                "    \"address\": \"Москва, Красная площадь, д.1\",\n" +
+                "    \"metroStation\": \"Краснопресненская\",\n" +
+                "    \"phone\": \"+7 900 009 09 09\",\n" +
+                "    \"rentTime\": 14,\n" +
+                "    \"deliveryDate\": \"2025-06-15\",\n" +
+                "    \"comment\": \"Будьте осторожны!!!\",\n" +
+                "    \"color\": [\n" +
+                "        \"BLACK\"\n" +
+                "    ]\n" +
+                "}";
 
-        // Выполнеем POST-запрос создания заказа и получение ответа
-        Response response = given()
-                .baseUri(BASE_URL)
-                .contentType(ContentType.JSON)
-                .cookie("_yasc", "RpYf4TTDZ2NrFpEzIYmgHm+K4kCj6zk82X33PQzHGUlRATwpUAFNrl+kaYyOigKO+g==")
-                .body(orderData)
-                .when()
-                .post("/api/v1/orders");
+        Response response =
+                RestAssured.given()
+                        .baseUri("https://qa-scooter.praktikum-services.ru")
+                        .basePath("/api/v1/")
+                        .header("Content-Type", "application/json")
+                        .body(requestBody)
+                        .post("orders");
 
-        // Извлекаем целое число из поля "track"
-        return response.then().extract().path("track");
+        int statusCode = response.getStatusCode();
+
+       if (statusCode != 201) { // Проверка успешного статуса HTTP
+            throw new RuntimeException("Ошибка создания заказа! Код состояния: " + statusCode);
+        }
+
+        return response.path("track");  // Получаем трек заказа из ответа
     }
-
+    public static void main(String[] args) {
+    }
 }
+
+
