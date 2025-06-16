@@ -10,7 +10,7 @@ public class AcceptOrder {
 
     private static final String BASE_URL = "https://qa-scooter.praktikum-services.ru";
 
-    // Метод для принятия заказа курьером
+    //  Метод для принятия заказа курьером
     @Step("Принятие заказа курьером с courierId")
     public static Response acceptOrder(Integer orderId, Integer courierId) {
         return given()

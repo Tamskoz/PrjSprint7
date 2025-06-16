@@ -11,7 +11,7 @@ public class CourierLogin {
 
     private static final String BASE_URL = "https://qa-scooter.praktikum-services.ru";
 
-    @Step("Получение ID курьера по его login и password")
+    @Step("Получение ID курьера по его login и password ")
     public static int getCourierId(String login, String password) {
         Response response = given()
                 .baseUri(BASE_URL)

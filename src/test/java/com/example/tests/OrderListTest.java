@@ -35,7 +35,7 @@ public class OrderListTest {
         // System.out.println(idC);
         int trackIdOrder = createOrderAndGetTrack(); // Создаем заказ и прихраниваем его traсk
         // System.out.println(trackIdOrder);
-        int IdOrder = getOrderIdByTrack(trackIdOrder); // Получаем id заказа по его traсk и прихраниваем
+        int IdOrder = getOrderIdByTrack(trackIdOrder); //  Получаем id заказа по его traсk и прихраниваем
         // System.out.println(IdOrder);
         acceptOrder(IdOrder, idC); // Для созданного курьера принимаем заказ по id
 

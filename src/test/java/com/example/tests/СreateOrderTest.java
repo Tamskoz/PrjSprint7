@@ -43,7 +43,7 @@ public class СreateOrderTest {
                 .post("/api/v1/orders");
         response.then()
                 .assertThat()
-                .statusCode(201) // Проверяем статус 201 (успешное создание)
+                .statusCode(201) //  Проверяем статус 201 (успешное создание)
                 .and()
                 .body(containsString("track")); // Проверяем наличие "track" в теле успешного ответа
 

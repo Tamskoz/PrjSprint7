@@ -7,7 +7,7 @@ import static io.restassured.RestAssured.given;
 public class CreateCourier {
     private static final String BASE_URL = "https://qa-scooter.praktikum-services.ru";
 
-   // Метод создания нового курьера
+   //  Метод создания нового курьера
    @Step("Создание нового курьера с параметрами login, password, firstName")
     public static Response createCourier(String login, String password, String firstName) {
         return given()

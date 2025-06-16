@@ -10,7 +10,7 @@ public class GetOrderByTrack {
 
     private static final String BASE_URL = "https://qa-scooter.praktikum-services.ru";
 
-    // Метод для получения заказа по track и возвращения его ID
+    //  Метод для получения заказа по track и возвращения его ID
     @Step("Получение ID заказа по его trackId")
     public static Integer getOrderIdByTrack(int trackNumber) {
         return given()

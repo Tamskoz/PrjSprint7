@@ -9,7 +9,7 @@ public class CourierDeletion {
 
     private static final String BASE_URL = "https://qa-scooter.praktikum-services.ru";
 
-    //Метод удаляет  курьера по его id.
+    // Метод удаляет  курьера по его id.
     @Step("Удаление курьера по courierId")
     public static Response deleteCourierById(int courierId) {
         return given()

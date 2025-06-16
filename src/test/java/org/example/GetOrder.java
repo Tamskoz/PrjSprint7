@@ -39,7 +39,7 @@ public class GetOrder {
 
         int statusCode = response.getStatusCode();
 
-       if (statusCode != 201) { // Проверка успешного статуса HTTP
+       if (statusCode != 201) { //  Проверка успешного статуса HTTP
             throw new RuntimeException("Ошибка создания заказа! Код состояния: " + statusCode);
         }
 

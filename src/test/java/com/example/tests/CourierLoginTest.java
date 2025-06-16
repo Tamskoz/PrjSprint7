@@ -87,7 +87,7 @@ public class CourierLoginTest {
     @Description("Проверка соответствия login и password")
     @Test
     public void testInvalidLoginError() {
-        // Формируем уникальные значения login, password и firstName для каждого запуска
+        //  Формируем уникальные значения login, password и firstName для каждого запуска
         String uniqueLogin = "TamS" + System.currentTimeMillis();
         String uniquePassword = "Pass" + System.currentTimeMillis();
         String uniqueFirstName = "FirstName" + System.currentTimeMillis();

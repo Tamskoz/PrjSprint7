@@ -16,7 +16,7 @@ public class CreateCourierTest {
 
     @BeforeAll
     public static void setup() {
-        RestAssured.baseURI = "https://qa-scooter.praktikum-services.ru"; // Базовый URL
+        RestAssured.baseURI = "https://qa-scooter.praktikum-services.ru"; //  Базовый URL
     }
 
     // 1. Тест на успешное создание курьера с уникальными правильными параметрами 201 Created

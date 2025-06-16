@@ -10,7 +10,7 @@ public class CancelOrder {
 
     private static final String BASE_URL = "https://qa-scooter.praktikum-services.ru";
 
-    // Метод для отмены заказа по track-номеру
+    //  Метод для отмены заказа по track-номеру
     @Step("Отменяем заказ по его trackId")
     public static Response cancelOrder(int trackNumber) {
         return given()
