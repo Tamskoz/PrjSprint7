@@ -7,7 +7,7 @@ import io.restassured.response.Response;
 
 import static io.restassured.RestAssured.given;
 
-public class GetOrder {
+public class OrderApi {
 
     private static final String BASE_URL = "https://qa-scooter.praktikum-services.ru";
 
@@ -45,6 +45,43 @@ public class GetOrder {
 
         return response.path("track");  // Получаем трек заказа из ответа
     }
+
+    //  Метод для отмены заказа по track-номеру
+    @Step("Отменяем заказ по его trackId")
+    public static Response cancelOrder(int trackNumber) {
+        return given()
+                .baseUri(BASE_URL)
+                .accept(ContentType.JSON)
+                .queryParam("track", trackNumber)          // Параметр запроса (номер заказа)
+                .when()
+                .put("/api/v1/orders/cancel");            // Отправляем PUT-запрос
+    }
+
+    //  Метод для принятия заказа курьером
+    @Step("Принятие заказа курьером с courierId")
+    public static Response acceptOrder(Integer orderId, Integer courierId) {
+        return given()
+                .baseUri(BASE_URL)
+                .contentType(ContentType.JSON)
+                .queryParam("courierId", courierId)      // Передача параметра courierId
+                .when()
+                .put("/api/v1/orders/accept/" + orderId); // Выполняем PUT-запрос
+    }
+
+    //  Метод для получения заказа по track и возвращения его ID
+    @Step("Получение ID заказа по его trackId")
+    public static Integer getOrderIdByTrack(int trackNumber) {
+        return given()
+                .baseUri(BASE_URL)
+                .accept(ContentType.JSON)
+                .queryParam("t", trackNumber)          // Передаем параметр track
+                .when()
+                .get("/api/v1/orders/track")           // Выполняем GET-запрос
+                .then()
+                .extract()                             // Извлекаем из ответа
+                .path("order.id");                     // Возвращаем значение пути "order.id"
+    }
+
     public static void main(String[] args) {
     }
 }

@@ -2,21 +2,43 @@ package com.example.tests;
 
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
+import io.restassured.response.Response;
+import org.example.CreateCourierRequest;
+import org.junit.jupiter.api.*;
 import io.qameta.allure.Description;
-import org.junit.jupiter.api.Test;
 
+import static org.apache.http.HttpStatus.*;
 import static io.restassured.RestAssured.given;
-import static org.example.CourierDeletion.deleteCourierById;
-import static org.example.CourierLogin.getCourierId;
+import static org.example.CourierApi.*;
 import static org.hamcrest.Matchers.*;
 
 public class CreateCourierTest {
 
-    @BeforeAll
-    public static void setup() {
-        RestAssured.baseURI = "https://qa-scooter.praktikum-services.ru"; //  Базовый URL
+    private static final String BASE_URL = "https://qa-scooter.praktikum-services.ru";
+    private int courierId; // Поле для хранения идентификатора курьера
+    private String uniqueLogin = "";
+    private String uniquePassword = "";
+    private String uniqueFirstName = "";
+
+    // Перед каждым тестом формируем уникальные значения login, password и firstName
+    @BeforeEach
+    void setUp() {
+        uniqueLogin = "TamS" + System.currentTimeMillis();
+        uniquePassword = "Pass" + System.currentTimeMillis();
+        uniqueFirstName = "FirstName" + System.currentTimeMillis();
+    }
+
+    @AfterEach
+    void tearDown() {
+        if (!uniqueLogin.isEmpty() && uniquePassword != null) {
+            int courierId = getCourierId(uniqueLogin, uniquePassword);
+            if (courierId > 0) {
+                deleteCourierById(courierId);
+            }
+        }
+            else {
+                System.out.println("Курьер с таким именем не найден, удаление пропущено.");
+            }
     }
 
     // 1. Тест на успешное создание курьера с уникальными правильными параметрами 201 Created
@@ -25,29 +47,18 @@ public class CreateCourierTest {
     @Test
     public void createCourierSuccessfully() {
 
-        // Формируем уникальные значения login, password и firstName для каждого запуска
-        String uniqueLogin = "TamS" + System.currentTimeMillis();
-        String uniquePassword = "Pass" + System.currentTimeMillis();
-        String uniqueFirstName = "FirstName" + System.currentTimeMillis();
-
-        // Формируем тело запроса
-        String json  = String.format("{ \"login\": \"%s\", \"password\": \"%s\", \"firstName\": \"%s\" }",
-                uniqueLogin, uniquePassword, uniqueFirstName);
+        CreateCourierRequest requestBody = new CreateCourierRequest(uniqueLogin, uniquePassword, uniqueFirstName);
 
         given()
-                .cookie("_yasc", "x2/xImZllCoQhKbJTj2oWu+iHvex3DSKXZtEP6SWokdcZfzVz5wTdkVIIzn3hOlQwQ==")
+                .baseUri(BASE_URL)
                 .contentType(ContentType.JSON)
-                .body(json)
+                .body(requestBody)
                 .when()
                 .post("/api/v1/courier")
                 .then()
                 .assertThat()
-                .statusCode(201)               // Проверяем статус 201 (успешное создание)
+                .statusCode(SC_CREATED)               // Проверяем статус 201 (успешное создание)
                 .body("ok", equalTo(true));    // Проверяем, что успешный запрос возвращает ok: true;
-
-        int idCour = getCourierId(uniqueLogin, uniquePassword); // Получаем id курьера по логину и паролю
-        //System.out.println(idCour);
-        deleteCourierById(idCour);  // Удаляем курьера с таким id
     }
 
     // 2. Повторное создание курьера с теми же данными возвращает ошибку 409 Conflict
@@ -57,41 +68,29 @@ public class CreateCourierTest {
     @Test
     public void cannotCreateSameCourier() {
 
-        // Формируем уникальные значения login, password и firstName для каждого запуска
-        String existingLogin = "TamsExisting" + System.currentTimeMillis();
-        String existingPassword = "PasExisting" + System.currentTimeMillis();
-        String existingFirstName = "FirstNameExisting" + System.currentTimeMillis();
-
-        // Первый раз создаем курьера
-        String json = String.format("{ \"login\": \"%s\", \"password\": \"%s\", \"firstName\": \"%s\" }",
-                existingLogin, existingPassword, existingFirstName);
+        CreateCourierRequest requestBody = new CreateCourierRequest(uniqueLogin, uniquePassword, uniqueFirstName);
 
         given()
-                .cookie("_yasc", "x2/xImZllCoQhKbJTj2oWu+iHvex3DSKXZtEP6SWokdcZfzVz5wTdkVIIzn3hOlQwQ==")
+                .baseUri(BASE_URL)
                 .contentType(ContentType.JSON)
-                .body(json)
+                .body(requestBody)
                 .when()
                 .post("/api/v1/courier")
                 .then()
                 .assertThat()
-                .statusCode(201); // Курьер успешно создан
+                .statusCode(SC_CREATED); // Курьер успешно создан
 
         // Пробуем создать курьера с теми же данными
         given()
-                .cookie("_yasc", "x2/xImZllCoQhKbJTj2oWu+iHvex3DSKXZtEP6SWokdcZfzVz5wTdkVIIzn3hOlQwQ==")
+                .baseUri(BASE_URL)
                 .contentType(ContentType.JSON)
-                .body(json)
+                .body(requestBody)
                 .when()
                 .post("/api/v1/courier")
                 .then()
                 .assertThat()
-                .statusCode(409)
+                .statusCode(SC_CONFLICT)
                 .body(containsString("Этот логин уже используется. Попробуйте другой."));// Проверяем статус 409 (Conflict)
-
-        int idCour = getCourierId(existingLogin, existingPassword); // Получаем id курьера по логину и паролю
-        //System.out.println(idCour);
-        deleteCourierById(idCour);  // Удаляем курьера с таким id
-
     }
 
     // 3. Проверка, что при отсутствии обязательного поля password возвращается 400-сотая ошибка
@@ -99,17 +98,21 @@ public class CreateCourierTest {
     @Description("Нужно передавать обязательное поле password")
     @Test
     public void missingPasswordReturnsError() {
-        String json = "{ \"login\": \"MissingPassword\", \"firstName\": \"FirstName\" }";
+
+        String tempUniqueLogin = "TempLogin" + System.currentTimeMillis(); // Новый временный логин
+        String tempUniqueFirstName = "TempFirstName" + System.currentTimeMillis(); // Новый временный First Name
+
+        CreateCourierRequest requestBody = new CreateCourierRequest(tempUniqueLogin, null, tempUniqueFirstName);
 
         given()
-                .cookie("_yasc", "x2/xImZllCoQhKbJTj2oWu+iHvex3DSKXZtEP6SWokdcZfzVz5wTdkVIIzn3hOlQwQ==")
+                .baseUri(BASE_URL)
                 .contentType(ContentType.JSON)
-                .body(json)
+                .body(requestBody)
                 .when()
                 .post("/api/v1/courier")
                 .then()
                 .assertThat()
-                .statusCode(400)                  // Проверяем статус 400(Bad Request)
+                .statusCode(SC_BAD_REQUEST)                  // Проверяем статус 400(Bad Request)
                 .body(containsString("Недостаточно данных для создания учетной записи"));
     }
 
@@ -118,17 +121,21 @@ public class CreateCourierTest {
     @Description("Нужно передавать обязательное поле login")
     @Test
     public void missingLoginReturnsError() {
-        String json = "{ \"password\": \"Password\", \"firstName\": \"MissingLogin\" }";
+
+        String tempUniquePassword = "TempLogin" + System.currentTimeMillis(); // Новый временный логин
+        String tempUniqueFirstName = "TempFirstName" + System.currentTimeMillis(); // Новый временный First Name
+
+        CreateCourierRequest requestBody = new CreateCourierRequest(null,tempUniquePassword, tempUniqueFirstName);
 
         given()
-                .cookie("_yasc", "x2/xImZllCoQhKbJTj2oWu+iHvex3DSKXZtEP6SWokdcZfzVz5wTdkVIIzn3hOlQwQ==")
+                .baseUri(BASE_URL)
                 .contentType(ContentType.JSON)
-                .body(json)
+                .body(requestBody)
                 .when()
                 .post("/api/v1/courier")
                 .then()
                 .assertThat()
-                .statusCode(400)                  // Проверяем статус 400(Bad Request)
+                .statusCode(SC_BAD_REQUEST)                  // Проверяем статус 400(Bad Request)
                 .body(containsString("Недостаточно данных для создания учетной записи"));
     }
 
@@ -138,28 +145,18 @@ public class CreateCourierTest {
     @Test
     public void createCourierNoFirstNameSuccessfully() {
 
-        // Формируем уникальные значения login и password
-        String uniqueLogin = "TamS32" + System.currentTimeMillis();
-        String uniquePassword = "Pass" + System.currentTimeMillis();
-
-        // Формируем тело запроса
-        String json  = String.format("{ \"login\": \"%s\", \"password\": \"%s\"}",
-                uniqueLogin, uniquePassword);
+        CreateCourierRequest requestBody = new CreateCourierRequest(uniqueLogin, uniquePassword, "");
 
         given()
-                .cookie("_yasc", "x2/xImZllCoQhKbJTj2oWu+iHvex3DSKXZtEP6SWokdcZfzVz5wTdkVIIzn3hOlQwQ==")
+                .baseUri(BASE_URL)
                 .contentType(ContentType.JSON)
-                .body(json)
+                .body(requestBody)
                 .when()
                 .post("/api/v1/courier")
                 .then()
                 .assertThat()
-                .statusCode(201)               // Проверяем статус 201 (успешное создание)
+                .statusCode(SC_CREATED)               // Проверяем статус 201 (успешное создание)
                 .body("ok", equalTo(true));    // Проверяем, что успешный запрос возвращает ok: true;
-
-        int idCour = getCourierId(uniqueLogin, uniquePassword); // Получаем id курьера по логину и паролю
-        //System.out.println(idCour);
-        deleteCourierById(idCour);  // Удаляем курьера с таким id
     }
 }
 

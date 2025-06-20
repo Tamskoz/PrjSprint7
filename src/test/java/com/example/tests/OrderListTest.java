@@ -1,20 +1,14 @@
 package com.example.tests;
 
-import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import org.junit.jupiter.api.DisplayName;
 import io.qameta.allure.Description;
-import io.qameta.allure.Step;
 import org.junit.jupiter.api.Test;
-
+import static org.apache.http.HttpStatus.*;
 import static io.restassured.RestAssured.given;
-import static org.example.AcceptOrder.acceptOrder;
-import static org.example.CancelOrder.cancelOrder;
-import static org.example.CourierDeletion.deleteCourierById;
-import static org.example.CourierLogin.getCourierId;
-import static org.example.CreateCourier.createCourier;
-import static org.example.GetOrder.createOrderAndGetTrack;
-import static org.example.GetOrderByTrack.getOrderIdByTrack;
+import static org.example.OrderApi.*;
+import static org.example.CourierApi.*;
+import static org.example.OrderApi.createOrderAndGetTrack;
 import static org.hamcrest.Matchers.*;
 
 public class OrderListTest {
@@ -47,7 +41,7 @@ public class OrderListTest {
 
         response.then()
                 .assertThat()
-                .statusCode(200); // Проверяем успешный статус 200 ОК */
+                .statusCode(SC_OK); // Проверяем успешный статус 200 ОК */
 
         // Проверка наличия массива orders в теле ответа
         response.then()
