@@ -3,6 +3,8 @@ package com.example.tests;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
+import org.example.CourierApi;
+import org.example.CourierLoginRequest;
 import org.example.CreateCourierRequest;
 import org.junit.jupiter.api.*;
 import io.qameta.allure.Description;
@@ -10,7 +12,9 @@ import io.qameta.allure.Description;
 import static org.apache.http.HttpStatus.*;
 import static io.restassured.RestAssured.given;
 import static org.example.CourierApi.*;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class CreateCourierTest {
 
@@ -28,6 +32,7 @@ public class CreateCourierTest {
         uniqueFirstName = "FirstName" + System.currentTimeMillis();
     }
 
+    // Удаляем созданного курьера после каждого теста
     @AfterEach
     void tearDown() {
         if (!uniqueLogin.isEmpty() && uniquePassword != null) {
@@ -47,16 +52,12 @@ public class CreateCourierTest {
     @Test
     public void createCourierSuccessfully() {
 
-        CreateCourierRequest requestBody = new CreateCourierRequest(uniqueLogin, uniquePassword, uniqueFirstName);
+        // Создаем курьера с уникальными данными
+        CreateCourierRequest requestBody = new CreateCourierRequest(uniqueLogin, uniquePassword, uniquePassword);
 
-        given()
-                .baseUri(BASE_URL)
-                .contentType(ContentType.JSON)
-                .body(requestBody)
-                .when()
-                .post("/api/v1/courier")
-                .then()
-                .assertThat()
+        Response response = createCourier(requestBody);
+        response.then().log().all();  // Выводим полную информацию обо всех этапах запроса и ответа
+        response.then().assertThat()
                 .statusCode(SC_CREATED)               // Проверяем статус 201 (успешное создание)
                 .body("ok", equalTo(true));    // Проверяем, что успешный запрос возвращает ok: true;
     }
@@ -68,29 +69,22 @@ public class CreateCourierTest {
     @Test
     public void cannotCreateSameCourier() {
 
-        CreateCourierRequest requestBody = new CreateCourierRequest(uniqueLogin, uniquePassword, uniqueFirstName);
+        // Создаем первый раз курьера с уникальными данными
+        CreateCourierRequest initialRequestBody = new CreateCourierRequest(uniqueLogin, uniquePassword, uniquePassword);
 
-        given()
-                .baseUri(BASE_URL)
-                .contentType(ContentType.JSON)
-                .body(requestBody)
-                .when()
-                .post("/api/v1/courier")
-                .then()
-                .assertThat()
-                .statusCode(SC_CREATED); // Курьер успешно создан
+        Response response = createCourier(initialRequestBody);
+        response.then().log().all();  // Выводим полную информацию обо всех этапах запроса и ответа
+        response.then().assertThat()
+                .statusCode(SC_CREATED)               // Проверяем статус 201 (успешное создание)
+                .body("ok", equalTo(true));    // Проверяем, что успешный запрос возвращает ok: true;
 
-        // Пробуем создать курьера с теми же данными
-        given()
-                .baseUri(BASE_URL)
-                .contentType(ContentType.JSON)
-                .body(requestBody)
-                .when()
-                .post("/api/v1/courier")
-                .then()
-                .assertThat()
+        // Повторная попытка создать курьера с такими же данными должна вернуть ошибку
+        CreateCourierRequest duplicateRequestBody = new CreateCourierRequest(uniqueLogin, uniquePassword, uniquePassword);
+        Response secondResponse = createCourier(duplicateRequestBody);
+        secondResponse.then().log().all();  // Выводим полную информацию обо всех этапах запроса и ответа
+        secondResponse.then().assertThat()
                 .statusCode(SC_CONFLICT)
-                .body(containsString("Этот логин уже используется. Попробуйте другой."));// Проверяем статус 409 (Conflict)
+                .body(containsString("Этот логин уже используется. Попробуйте другой."));// Проверяем статус 409 (Conflict) */
     }
 
     // 3. Проверка, что при отсутствии обязательного поля password возвращается 400-сотая ошибка
@@ -99,20 +93,13 @@ public class CreateCourierTest {
     @Test
     public void missingPasswordReturnsError() {
 
-        String tempUniqueLogin = "TempLogin" + System.currentTimeMillis(); // Новый временный логин
-        String tempUniqueFirstName = "TempFirstName" + System.currentTimeMillis(); // Новый временный First Name
+        // Создаем курьера с уникальными данными, но без указания пароля
+        CreateCourierRequest invalidRequest = new CreateCourierRequest(uniqueLogin, null, uniquePassword);
 
-        CreateCourierRequest requestBody = new CreateCourierRequest(tempUniqueLogin, null, tempUniqueFirstName);
-
-        given()
-                .baseUri(BASE_URL)
-                .contentType(ContentType.JSON)
-                .body(requestBody)
-                .when()
-                .post("/api/v1/courier")
-                .then()
-                .assertThat()
-                .statusCode(SC_BAD_REQUEST)                  // Проверяем статус 400(Bad Request)
+        Response response = createCourier(invalidRequest);
+        response.then().log().all();  // Выводим полную информацию обо всех этапах запроса и ответа
+        response.then().assertThat()
+                .statusCode(SC_BAD_REQUEST)                  // Проверяем статус 400 (Bad Request)
                 .body(containsString("Недостаточно данных для создания учетной записи"));
     }
 
@@ -122,20 +109,13 @@ public class CreateCourierTest {
     @Test
     public void missingLoginReturnsError() {
 
-        String tempUniquePassword = "TempLogin" + System.currentTimeMillis(); // Новый временный логин
-        String tempUniqueFirstName = "TempFirstName" + System.currentTimeMillis(); // Новый временный First Name
+        // Создаем курьера с уникальными данными, но без указания логина
+        CreateCourierRequest invalidRequest = new CreateCourierRequest(null,uniquePassword, uniqueFirstName);
 
-        CreateCourierRequest requestBody = new CreateCourierRequest(null,tempUniquePassword, tempUniqueFirstName);
-
-        given()
-                .baseUri(BASE_URL)
-                .contentType(ContentType.JSON)
-                .body(requestBody)
-                .when()
-                .post("/api/v1/courier")
-                .then()
-                .assertThat()
-                .statusCode(SC_BAD_REQUEST)                  // Проверяем статус 400(Bad Request)
+        Response response = createCourier(invalidRequest);
+        response.then().log().all();  // Выводим полную информацию обо всех этапах запроса и ответа
+        response.then().assertThat()
+                .statusCode(SC_BAD_REQUEST)                  // Проверяем статус 400 (Bad Request)
                 .body(containsString("Недостаточно данных для создания учетной записи"));
     }
 
@@ -145,16 +125,12 @@ public class CreateCourierTest {
     @Test
     public void createCourierNoFirstNameSuccessfully() {
 
+        // Создаем курьера с уникальными данными, нобез указания firstName
         CreateCourierRequest requestBody = new CreateCourierRequest(uniqueLogin, uniquePassword, "");
 
-        given()
-                .baseUri(BASE_URL)
-                .contentType(ContentType.JSON)
-                .body(requestBody)
-                .when()
-                .post("/api/v1/courier")
-                .then()
-                .assertThat()
+        Response response = createCourier(requestBody);
+        response.then().log().all();  // Выводим полную информацию обо всех этапах запроса и ответа
+        response.then().assertThat()
                 .statusCode(SC_CREATED)               // Проверяем статус 201 (успешное создание)
                 .body("ok", equalTo(true));    // Проверяем, что успешный запрос возвращает ok: true;
     }

@@ -1,6 +1,7 @@
 package com.example.tests;
 
 import io.restassured.response.Response;
+import org.example.CreateCourierRequest;
 import org.junit.jupiter.api.DisplayName;
 import io.qameta.allure.Description;
 import org.junit.jupiter.api.Test;
@@ -19,12 +20,15 @@ public class OrderListTest {
     @Test
     public void testOrderList() {
 
-        // Формируем уникальные значения login, password и firstName для каждого запуска
+        // Формируем уникальные значения login, password и firstName
         String uniqueLogin = "TamS" + System.currentTimeMillis();
         String uniquePassword = "Pass" + System.currentTimeMillis();
         String uniqueFirstName = "FirstName" + System.currentTimeMillis();
 
-        createCourier(uniqueLogin,uniquePassword,uniqueFirstName);   //Создаем курьера с этими уникальными значениями
+        // Создаем курьера с уникальными данными
+        CreateCourierRequest requestBody = new CreateCourierRequest(uniqueLogin, uniquePassword, uniqueFirstName);
+        createCourier(requestBody);
+
         int idC = getCourierId(uniqueLogin,uniquePassword); // Прихраниваем id курьера
         // System.out.println(idC);
         int trackIdOrder = createOrderAndGetTrack(); // Создаем заказ и прихраниваем его traсk
@@ -34,16 +38,13 @@ public class OrderListTest {
         acceptOrder(IdOrder, idC); // Для созданного курьера принимаем заказ по id
 
         // Запускаем вызов запроса на получение списка заказов курьера
-        Response response = given()
-                .baseUri(BASE_URL)
-                .header("Content-Type", "application/json")
-                .get("/api/v1/orders?courierId="+idC);
-
+        Response response = СourierOrderList(idC);
+        response.then().log().all();  // Выводим полную информацию обо всех этапах запроса и ответа
         response.then()
                 .assertThat()
-                .statusCode(SC_OK); // Проверяем успешный статус 200 ОК */
+                .statusCode(SC_OK); // Проверяем успешный статус 200 ОК
 
-        // Проверка наличия массива orders в теле ответа
+        // Проверяем наличия массива orders в теле ответа
         response.then()
                 .body("orders", hasSize(greaterThanOrEqualTo(1))); // Массив заказов не пуст
 

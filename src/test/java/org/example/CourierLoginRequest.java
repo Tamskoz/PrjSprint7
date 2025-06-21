@@ -2,8 +2,8 @@ package org.example;
 
 public class CourierLoginRequest {
 
-    private final String login;
-    private final String password;
+    private String login;
+    private String password;
 
     public CourierLoginRequest(String login, String password) {
         this.login = login;
@@ -12,6 +12,10 @@ public class CourierLoginRequest {
 
     public String getLogin() { return login; }
     public String getPassword() { return password; }
+
+    public void setLogin(String login) { this.login = login; }
+    public void setPassword(String password) { this.password = password; }
+
 
     public static void main(String[] args) {
     }

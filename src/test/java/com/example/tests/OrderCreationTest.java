@@ -2,15 +2,18 @@ package com.example.tests;
 
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
+import org.example.CreateCourierRequest;
+import org.example.СreateOrderRequest;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static io.restassured.RestAssured.given;
 import static org.apache.http.HttpStatus.SC_CREATED;
-import static org.example.OrderApi.cancelOrder;
-import static org.example.OrderApi.getOrderIdByTrack;
+import static org.example.CourierApi.createCourier;
+import static org.example.OrderApi.*;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -22,6 +25,15 @@ import java.util.stream.Stream;
 public class OrderCreationTest {
 
     private static final String BASE_URL = "https://qa-scooter.praktikum-services.ru";
+    private String firstName;
+    private String lastName;
+    private String address;
+    private String metroStation;
+    private String phone;
+    private int rentTime;
+    private String deliveryDate;
+    private String comment;
+    private List<String> color;
 
     // Статический метод для генерации наборов входных данных
     static Stream<Arguments> provideColors() {
@@ -37,7 +49,7 @@ public class OrderCreationTest {
     @ParameterizedTest(name = "Создание заказа с цветами: {arguments}")
     @MethodSource("provideColors")
     public void orderCreationWithDifferentColors(List<String> colors) {
-        // Формируем тело запроса с передачей списка цветов
+      // Формируем тело запроса с передачей списка цветов
         Map<String, Object> body = new HashMap<>();
         body.put("firstName", "Татьяна");
         body.put("lastName", "Козлова");
@@ -45,7 +57,7 @@ public class OrderCreationTest {
         body.put("metroStation", "Краснопресненская");
         body.put("phone", "+7 900 009 09 09");
         body.put("rentTime", 14);
-        body.put("deliveryDate", "2025-06-15");
+        body.put("deliveryDate", "2025-06-15T12:00:00");
         body.put("comment", "Будьте осторожны!!!");
 
         // Динамически добавляем список цветов в тело запроса
@@ -53,13 +65,11 @@ public class OrderCreationTest {
             body.put("color", colors);
         }
 
-        // Отправляем запрос и проверяем статус ответа
-        Response response = given()
-                .baseUri(BASE_URL)
-                .contentType(ContentType.JSON)
-                .body(body)
-                .when()
-                .post("/api/v1/orders");
+        // Создаем заказ
+        СreateOrderRequest requestBody = new  СreateOrderRequest("Татьяна", "Козлова", "Москва, Красная площадь, д.1", "Краснопресненская", "+7 900 009 09 09", 14, "2025-06-15T12:00:00", "Будьте осторожны!!!", colors);
+        Response response = createOrder(requestBody);
+
+        response.then().log().all();  // Выводим полную информацию обо всех этапах запроса и ответа
         response.then()
                 .assertThat()
                 .statusCode(SC_CREATED)                   // Проверяем статус 201 (Created)

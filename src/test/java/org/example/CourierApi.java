@@ -2,13 +2,10 @@ package org.example;
 
 import io.qameta.allure.Step;
 import io.restassured.response.Response;
-import org.apache.http.HttpStatus;
 
 import static io.restassured.RestAssured.given;
 import static org.apache.http.HttpStatus.SC_CREATED;
 import static org.apache.http.HttpStatus.SC_OK;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 
 public class CourierApi {
 
@@ -43,15 +40,11 @@ public class CourierApi {
                 .pathParam("courierId", courierId)
                 .when()
                 .delete("/api/v1/courier/{courierId}");
-
     }
 
     //  Метод создания нового курьера
     @Step("Создание нового курьера с параметрами login, password, firstName")
-    public static Response createCourier(String login, String password, String firstName) {
-
-        CreateCourierRequest requestBody = new CreateCourierRequest(login, password, firstName);
-
+       public static Response createCourier(CreateCourierRequest requestBody) {
         return given()
                 .baseUri(BASE_URL)
                 .contentType("application/json")
@@ -60,7 +53,29 @@ public class CourierApi {
                 .post("/api/v1/courier");
     }
 
-    public static void main(String[] args) {
-
+    //  Метод для авторизации курьера
+    @Step("Авторизация курьера с параметрами login, password")
+    public static Response LoginCourier(CourierLoginRequest requestBody) {
+        Response response = given()
+                .baseUri(BASE_URL)
+                .contentType("application/json")
+                .body(requestBody)
+                .when()
+                .post("/api/v1/courier/login");
+        return response;
     }
+
+    //Mетод для получение списка заказов курьера
+    @Step("Получение списка заказов курьера")
+    public static Response СourierOrderList(int courierId) {
+
+        Response response = given()
+                .baseUri(BASE_URL)
+                .header("Content-Type", "application/json")
+                .get("/api/v1/orders?courierId=" + courierId);
+        return response;
+    }
+      /*  public static void main(String[] args) {
+        }*/
+
 }

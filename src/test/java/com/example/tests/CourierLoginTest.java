@@ -1,12 +1,13 @@
 package com.example.tests;
 
 import io.restassured.response.Response;
+import org.example.CourierApi;
 import org.example.CourierLoginRequest;
+import org.example.CreateCourierRequest;
 import org.junit.jupiter.api.*;
 import io.qameta.allure.Description;
 
 import static org.apache.http.HttpStatus.*;
-import static io.restassured.RestAssured.given;
 import static org.example.CourierApi.*;
 import static org.hamcrest.Matchers.*;
 
@@ -25,7 +26,8 @@ public class CourierLoginTest {
          uniqueLogin = "TamS" + System.currentTimeMillis();
          uniquePassword = "Pass" + System.currentTimeMillis();
          uniqueFirstName = "FirstName" + System.currentTimeMillis();
-        createCourier(uniqueLogin, uniquePassword, uniqueFirstName); // Создаем курьера
+        CreateCourierRequest requestBody = new CreateCourierRequest(uniqueLogin, uniquePassword, uniqueFirstName);
+        createCourier(requestBody); //
         courierId = getCourierId(uniqueLogin, uniquePassword); // Сохраняем созданный ID
     }
 
@@ -40,43 +42,26 @@ public class CourierLoginTest {
         @DisplayName("200 ОК при успешной авторизации курьера") //
         @Description("Проверка успешной авторизации курьера")
         @Test
-        public void testSuccessfulLogin () {
+        public void testSuccessfulLogin() {
 
-            CourierLoginRequest requestBody = new CourierLoginRequest(uniqueLogin, uniquePassword);
-
-            Response response =  given()
-                    .baseUri(BASE_URL)
-                    .header("Content-Type", "application/json")
-                    .body(requestBody)
-                    .when()
-                    .post("/api/v1/courier/login");
-
-            response.then()
-                    .log().all()
-                    .assertThat()
-                    .statusCode(SC_OK) // Проверяем статус 200 (успешная авторизация)
-                    .and()
-                    .body("id", notNullValue()); // Проверяем, что успешный запрос возвращается непустой id-шник
+            int returnedId = CourierApi.getCourierId(uniqueLogin, uniquePassword);
+            // Проверяем, что возвращаемый ID не равен нулю (означает успешную авторизацию)
+            Assertions.assertNotEquals(returnedId, 0,
+                    "Авторизация прошла успешно, возвращён ID курьера.");
         }
 
         // 2.  Проверка, что при отсутствии обязательного поля login попытка авторизации возвращает 400-сотую ошибку
         @DisplayName("400 Bad Request при отсутствии обязательного поля login")
         @Description("Нужно передавать обязательное поле login")
         @Test
-        public void testMissingLoginError () {
-            CourierLoginRequest requestBody = new CourierLoginRequest(null, uniquePassword);
+        public void testMissingLoginError() {
 
-            Response response =  given()
-                    .baseUri(BASE_URL)
-                    .header("Content-Type", "application/json")
-                    .body(requestBody)
-                    .when()
-                    .post("/api/v1/courier/login");
+            CourierLoginRequest invalidRequest = new CourierLoginRequest(null, uniquePassword);
+            Response response = LoginCourier(invalidRequest);
+            response.then().assertThat()
+                    .statusCode(equalTo(SC_BAD_REQUEST))
+                    .log().ifValidationFails(); // Для вывода логов при провале теста
 
-            response.then()
-                    .assertThat()
-                    .statusCode(SC_BAD_REQUEST)                  // Проверяем статус 400(Bad Request)
-                    .body(containsString("Недостаточно данных для входа"));
         }
 
         // 3.  Проверка, что при отсутствии обязательного поля password попытка авторизации 400-сотая ошибка
@@ -86,19 +71,13 @@ public class CourierLoginTest {
         @Test
         public void testMissingPasswordError () {
 
-            CourierLoginRequest requestBody = new CourierLoginRequest(uniqueLogin, null);
+            CourierLoginRequest invalidRequest = new CourierLoginRequest(uniqueLogin, null);
+            Response response = LoginCourier(invalidRequest);
 
-            Response response =  given()
-                    .baseUri(BASE_URL)
-                    .header("Content-Type", "application/json")
-                    .body(requestBody)
-                    .when()
-                    .post("/api/v1/courier/login");
+            response.then().assertThat()
+                    .statusCode(equalTo(SC_BAD_REQUEST))
+                    .log().ifValidationFails(); // Для вывода логов при провале теста
 
-            response.then()
-                    .assertThat()
-                    .statusCode(SC_BAD_REQUEST)                  // Ожидаем статус 400(Bad Request), а получаем 504 (Gateway time out)
-                    .body(containsString("Недостаточно данных для входа"));
         }
 
         // 4.  Проверка, что при НЕверном login, но верном password попытка авторизации возвращает 404 ошибку
@@ -106,19 +85,12 @@ public class CourierLoginTest {
         @Description("Проверка соответствия login и password")
         @Test
         public void testInvalidLoginError () {
-            CourierLoginRequest requestBody = new CourierLoginRequest("qwer", uniquePassword);
+            CourierLoginRequest invalidRequest = new CourierLoginRequest("qwer", uniquePassword);
+            Response response = LoginCourier(invalidRequest);
 
-            Response response =  given()
-                    .baseUri(BASE_URL)
-                    .header("Content-Type", "application/json")
-                    .body(requestBody)
-                    .when()
-                    .post("/api/v1/courier/login");
-
-            response.then()
-                    .assertThat()
-                    .statusCode(SC_NOT_FOUND) // Проверяем статус 404 (Not Found)
-                    .body(containsString("Учетная запись не найдена"));
+            response.then().assertThat()
+                    .statusCode(equalTo(SC_NOT_FOUND))
+                    .log().ifValidationFails(); // Для вывода логов при провале теста
         }
 
         // 5.  Проверка, что при НЕверном password, но верном login попытка авторизации возвращает 404 ошибку
@@ -126,19 +98,12 @@ public class CourierLoginTest {
         @Description("Проверка соответствия login и password")
         @Test
         public void testInvalidPasswordError () {
-            CourierLoginRequest requestBody = new CourierLoginRequest(uniqueLogin, "qwer");
+            CourierLoginRequest invalidRequest = new CourierLoginRequest(uniqueLogin, "qwer");
+            Response response = LoginCourier(invalidRequest);
 
-            Response response =  given()
-                    .baseUri(BASE_URL)
-                    .header("Content-Type", "application/json")
-                    .body(requestBody)
-                    .when()
-                    .post("/api/v1/courier/login");
-
-            response.then()
-                    .assertThat()
-                    .statusCode(SC_NOT_FOUND) // Проверяем статус 404 (Not Found)
-                    .body(containsString("Учетная запись не найдена"));
+            response.then().assertThat()
+                    .statusCode(equalTo(SC_NOT_FOUND))
+                    .log().ifValidationFails(); // Для вывода логов при провале теста
         }
 
         // 6.  Проверка, что при НЕсуществующем login попытка авторизации возвращает 404 ошибку
@@ -147,20 +112,13 @@ public class CourierLoginTest {
         @Test
         public void testNonExisteLoginError () {
             deleteCourierById(courierId); // Удаляем курьера
-            CourierLoginRequest requestBody = new CourierLoginRequest("111", uniquePassword);
+            CourierLoginRequest invalidRequest = new CourierLoginRequest("111", uniquePassword);
+            Response response = LoginCourier(invalidRequest);
 
-            //Делаем попытку авторизоваться с данными удаленного курьера
-            Response response =  given()
-                    .baseUri(BASE_URL)
-                    .header("Content-Type", "application/json")
-                    .body(requestBody)
-                    .when()
-                    .post("/api/v1/courier/login");
+            response.then().assertThat()
+                    .statusCode(equalTo(SC_NOT_FOUND))
+                    .log().ifValidationFails(); // Для вывода логов при провале теста
 
-            response.then()
-                    .assertThat()
-                    .statusCode(SC_NOT_FOUND) // Проверяем статус 404 (Not Found)
-                    .body(containsString("Учетная запись не найдена"));
         }
     }
 

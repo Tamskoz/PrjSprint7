@@ -5,17 +5,23 @@ import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import static io.restassured.RestAssured.given;
 
 public class OrderApi {
 
     private static final String BASE_URL = "https://qa-scooter.praktikum-services.ru";
+    private static List<String> colors;
 
    // Метод для создания закада и получения его track
    @Step("Создание заказа и получение track-кода")
     public static int createOrderAndGetTrack() {
-        // Запрос JSON тела
-        String requestBody = "{\n" +
+
+       // Запрос JSON тела
+       String requestBody = "{\n" +
                 "    \"firstName\": \"Татьяна\",\n" +
                 "    \"lastName\": \"Козлова\",\n" +
                 "    \"address\": \"Москва, Красная площадь, д.1\",\n" +
@@ -38,11 +44,9 @@ public class OrderApi {
                         .post("orders");
 
         int statusCode = response.getStatusCode();
-
        if (statusCode != 201) { //  Проверка успешного статуса HTTP
             throw new RuntimeException("Ошибка создания заказа! Код состояния: " + statusCode);
         }
-
         return response.path("track");  // Получаем трек заказа из ответа
     }
 
@@ -80,6 +84,20 @@ public class OrderApi {
                 .then()
                 .extract()                             // Извлекаем из ответа
                 .path("order.id");                     // Возвращаем значение пути "order.id"
+    }
+
+    //  Метод для создания заказа
+    @Step("Создание заказа")
+    public static Response createOrder(СreateOrderRequest requestBody) {
+
+        Response response = given()
+                .baseUri(BASE_URL)
+                .contentType("application/json")
+                .body(requestBody)
+                .when()
+                .post("/api/v1/orders");
+
+        return response;
     }
 
     public static void main(String[] args) {
